@@ -1,0 +1,17 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfplan
+tfplan
+
+# Local variable and backend files
+terraform.tfvars
+*.auto.tfvars
+backend.hcl
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store

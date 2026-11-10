@@ -1,0 +1,35 @@
+# General
+aws_region   = "ap-south-1"
+project_name = "two-tier"
+environment  = "dev"
+
+# Network: one NAT is cheaper; one NAT per AZ is more resilient but costs more.
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
+single_nat_gateway   = true
+
+# Web tier
+instance_type        = "t3.micro"
+asg_min_size         = 2
+asg_max_size         = 4
+asg_desired_capacity = 2
+
+# Database: RDS generates the master password and stores it in Secrets Manager.
+db_name                    = "appdb"
+db_username                = "dbadmin"
+db_instance_class          = "db.t3.micro"
+db_allocated_storage       = 20
+db_engine_version          = "16"
+db_multi_az                = false
+db_deletion_protection     = false
+db_skip_final_snapshot     = true
+db_backup_retention_period = 7
+
+# Optional ALB TLS. Certificate must be in aws_region and cover the ALB hostname/domain.
+alb_certificate_arn     = ""
+alb_deletion_protection = false
+
+# Optional CloudFront + WAF + Route 53. Requires a public hosted zone.
+enable_cdn  = false
+domain_name = ""
