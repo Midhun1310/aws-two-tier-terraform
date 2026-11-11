@@ -1,51 +1,53 @@
+
 name: Terraform CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: terraform-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  validate:
-    name: Format, validate and lint
+  terraform-checks:
+    name: Terraform Validation and Security
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
-          terraform_version: "1.10.5"
+          terraform_version: "1.10.0"
+          terraform_wrapper: false
 
-      - name: Terraform format
+      - name: Terraform Format
         run: terraform fmt -check -recursive
 
-      - name: Terraform init (without backend)
-        run: terraform init -backend=false -input=false
+      - name: Terraform Init
+        run: terraform init -backend=false
 
-      - name: Terraform validate
+      - name: Terraform Validate
         run: terraform validate
 
       - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@v4
+        uses: terraform-linters/setup-tflint@v6
 
-      - name: TFLint
+      - name: Run TFLint
         run: |
           tflint --init
           tflint --recursive
 
-      - name: Checkov IaC security scan
+      - name: Run Checkov
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: .
           framework: terraform
-          quiet: true
           soft_fail: false
