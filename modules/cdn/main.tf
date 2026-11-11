@@ -165,10 +165,6 @@ resource "aws_cloudfront_response_headers_policy" "security" {
   }
 }
 
-#checkov:skip=CKV_AWS_86:CloudFront logging requires S3 logging storage and increases cost; add when a log-retention requirement is defined.
-#checkov:skip=CKV_AWS_374:Geo-blocking is a business policy; this optional distribution is intended to be globally reachable.
-#checkov:skip=CKV_AWS_310:There is only one ALB origin; a second independent origin is not available for failover.
-#checkov:skip=CKV2_AWS_47:Checkov does not recognize the configured AWS managed known-bad-inputs rule group as its expected Log4j control; the managed rule group remains enabled. Validate this exception against the Checkov version in CI.
 resource "aws_cloudfront_distribution" "this" {
 
   enabled             = true

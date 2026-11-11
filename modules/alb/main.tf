@@ -1,4 +1,3 @@
-#checkov:skip=CKV2_AWS_28:CloudFront WAF is used when CDN is enabled. With CDN disabled, deploy a regional WAF before production exposure.
 resource "aws_lb" "this" {
   name                       = "${var.name_prefix}-alb"
   load_balancer_type         = "application"
@@ -17,11 +16,6 @@ resource "aws_lb" "this" {
   tags = { Name = "${var.name_prefix}-alb" }
 }
 
-#checkov:skip=CKV2_AWS_62:ALB access logs are delivered as objects; no event-driven processing is required.
-#checkov:skip=CKV_AWS_21:Access logs are retained for 90 days; object versioning would retain duplicate log versions unnecessarily.
-#checkov:skip=CKV_AWS_18:This is the destination bucket for ALB access logs; enabling server access logging requires a separate destination bucket and creates additional cost.
-#checkov:skip=CKV_AWS_144:Cross-region replication is not required for this development-oriented access-log bucket. Enable separately if a disaster-recovery requirement is established.
-#checkov:skip=CKV_AWS_145:ALB access log delivery supports SSE-S3 encryption; AES256 is configured below.
 resource "aws_s3_bucket" "alb_logs" {
   bucket_prefix = "${replace(var.name_prefix, "_", "-")}-alb-logs-"
   force_destroy = false
@@ -74,7 +68,6 @@ resource "aws_s3_bucket_policy" "alb_logs" {
   policy = data.aws_iam_policy_document.alb_logs.json
 }
 
-#checkov:skip=CKV_AWS_378:ALB-to-instance traffic stays inside the VPC and is restricted by the web-tier security group; TLS termination is at the ALB.
 resource "aws_lb_target_group" "web" {
   name        = "${var.name_prefix}-web-tg"
   port        = 80
@@ -100,9 +93,6 @@ resource "aws_lb_target_group" "web" {
 
 # Without a certificate, HTTP is used for a low-cost demo. Supply an ACM
 # certificate ARN to enable TLS termination and automatic HTTP redirection.
-#checkov:skip=CKV_AWS_2:HTTP forwarding is used for the CloudFront-to-ALB origin hop when CDN is enabled; production without CDN must provide an ALB certificate.
-#checkov:skip=CKV_AWS_103:TLS 1.2+ is configured on the HTTPS listener when direct ALB HTTPS is used; CloudFront terminates viewer TLS when CDN is enabled.
-#checkov:skip=CKV2_AWS_20:Direct-ALB production uses the redirect listener; CloudFront production uses its HTTPS viewer policy and a restricted HTTP origin hop.
 resource "aws_lb_listener" "http_forward" {
   count             = var.certificate_arn == "" ? 1 : 0
   load_balancer_arn = aws_lb.this.arn

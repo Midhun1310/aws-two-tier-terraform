@@ -5,8 +5,6 @@ data "aws_ec2_managed_prefix_list" "cloudfront_origin" {
 }
 
 # ALB is public by default, or CloudFront-only when the CDN module is enabled.
-#checkov:skip=CKV2_AWS_5:Attached to the ALB via the root module security_groups argument.
-#checkov:skip=CKV_AWS_260:Public HTTP is retained only for the HTTP-to-HTTPS redirect listener.
 resource "aws_security_group" "alb" {
   name        = "${var.name_prefix}-alb-sg"
   description = "Allow public HTTP and HTTPS traffic to the ALB"
@@ -42,7 +40,6 @@ resource "aws_security_group" "alb" {
 }
 
 # Web tier: only reachable from the load balancer.
-#checkov:skip=CKV2_AWS_5:Attached to EC2 instances through the compute launch template.
 resource "aws_security_group" "web" {
   name        = "${var.name_prefix}-web-sg"
   description = "Allow HTTP from the ALB only"
@@ -76,7 +73,6 @@ resource "aws_security_group" "web" {
 }
 
 # Database tier: only reachable from the web tier.
-#checkov:skip=CKV2_AWS_5:Attached to RDS through the root module vpc_security_group_ids argument.
 resource "aws_security_group" "db" {
   name        = "${var.name_prefix}-db-sg"
   description = "Allow PostgreSQL from the web tier only"

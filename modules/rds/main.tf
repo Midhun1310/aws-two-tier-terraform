@@ -24,11 +24,6 @@ resource "aws_db_parameter_group" "this" {
   lifecycle { create_before_destroy = true }
 }
 
-#checkov:skip=CKV_AWS_157:Multi-AZ is environment-configurable; enable for production, keep disabled for lower-cost dev.
-#checkov:skip=CKV_AWS_353:Performance Insights is configurable because it can add cost; enable in production as required.
-#checkov:skip=CKV_AWS_161:IAM authentication requires application token-generation support; enable only after app integration.
-#checkov:skip=CKV_AWS_118:Enhanced Monitoring requires an additional IAM role and monitoring overhead; add when operationally required.
-#checkov:skip=CKV2_AWS_30:Slow query logging is enabled at 1000ms; full statement logging is avoided to reduce sensitive-data exposure.
 resource "aws_db_instance" "this" {
 
   identifier = "${var.name_prefix}-postgres"
