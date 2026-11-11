@@ -57,3 +57,15 @@ variable "backup_retention_days" {
   description = "Automated backup retention period in days."
   type        = number
 }
+
+variable "enable_performance_insights" {
+  description = "Enable RDS Performance Insights."
+  type        = bool
+  default     = false
+}
+
+variable "enable_iam_authentication" {
+  description = "Enable IAM DB authentication; application must use generated tokens."
+  type        = bool
+  default     = false
+}

@@ -18,6 +18,22 @@ variable "environment" {
 }
 
 # ---------- Network ----------
+variable "availability_zones" {
+  description = "Explicit AZ names for stable subnet placement; verify these names in your AWS account."
+  type        = list(string)
+  default     = ["ap-south-1a", "ap-south-1b"]
+  validation {
+    condition     = length(var.availability_zones) >= 2 && length(distinct(var.availability_zones)) == length(var.availability_zones)
+    error_message = "Provide at least two unique Availability Zones."
+  }
+}
+
+variable "enable_vpc_flow_logs" {
+  description = "Enable VPC Flow Logs to CloudWatch; incurs log ingestion/storage charges."
+  type        = bool
+  default     = false
+}
+
 variable "vpc_cidr" {
   description = "CIDR block for the VPC."
   type        = string
@@ -127,13 +143,29 @@ variable "db_backup_retention_period" {
 }
 
 variable "alb_certificate_arn" {
-  description = "Optional ACM certificate ARN in the deployment region. When set, ALB redirects HTTP to HTTPS."
+  description = "ACM certificate ARN in the deployment region. Required for production HTTPS."
   type        = string
   default     = ""
+  validation {
+    condition     = var.environment != "prod" || var.enable_cdn || length(var.alb_certificate_arn) > 0
+    error_message = "Production requires alb_certificate_arn so the ALB can serve HTTPS and redirect HTTP."
+  }
 }
 
 variable "alb_deletion_protection" {
   description = "Enable deletion protection for the internet-facing ALB."
+  type        = bool
+  default     = true
+}
+
+variable "enable_performance_insights" {
+  description = "Enable RDS Performance Insights; check instance-class pricing and availability."
+  type        = bool
+  default     = false
+}
+
+variable "enable_db_iam_authentication" {
+  description = "Enable IAM DB authentication; application must generate RDS auth tokens."
   type        = bool
   default     = false
 }

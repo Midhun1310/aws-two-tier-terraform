@@ -1,0 +1,19 @@
+# Production overrides. Replace the ACM ARN with a real certificate in ap-south-1.
+environment = "prod"
+asg_min_size = 2
+asg_desired_capacity = 2
+asg_max_size = 6
+single_nat_gateway = false
+db_multi_az = true
+db_deletion_protection = true
+db_skip_final_snapshot = false
+db_backup_retention_period = 14
+alb_deletion_protection = true
+alb_certificate_arn = "" # Not needed while CloudFront uses HTTP to the ALB origin.
+enable_vpc_flow_logs = true
+enable_performance_insights = true
+# Enable only after the application supports IAM auth tokens.
+enable_db_iam_authentication = false
+# CDN remains optional; enable only after configuring Route 53 and domain ownership.
+enable_cdn = true
+domain_name = "example.com" # Replace with the domain in your public Route 53 hosted zone.

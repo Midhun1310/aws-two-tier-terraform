@@ -8,6 +8,11 @@ variable "vpc_id" {
   type        = string
 }
 
+variable "vpc_cidr" {
+  description = "VPC CIDR for restricted outbound traffic between tiers."
+  type        = string
+}
+
 variable "db_port" {
   description = "Database port."
   type        = number

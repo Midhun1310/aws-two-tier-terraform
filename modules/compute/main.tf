@@ -67,6 +67,15 @@ resource "aws_autoscaling_group" "web" {
     version = aws_launch_template.web.latest_version
   }
 
+  dynamic "tag" {
+    for_each = { Name = "${var.name_prefix}-web", ManagedBy = "terraform" }
+    content {
+      key                 = tag.key
+      value               = tag.value
+      propagate_at_launch = true
+    }
+  }
+
   # Replace instances gradually when the launch template changes.
   instance_refresh {
     strategy = "Rolling"

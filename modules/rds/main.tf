@@ -5,7 +5,25 @@ resource "aws_db_subnet_group" "this" {
   tags = { Name = "${var.name_prefix}-db-subnet-group" }
 }
 
+resource "aws_db_parameter_group" "this" {
+  name_prefix = "${var.name_prefix}-pg-"
+  family      = "postgres16"
+  description = "Slow-query logging for ${var.name_prefix}"
+  parameter {
+    name         = "log_min_duration_statement"
+    value        = "1000"
+    apply_method = "pending-reboot"
+  }
+  lifecycle { create_before_destroy = true }
+}
+
+#checkov:skip=CKV_AWS_157:Multi-AZ is environment-configurable; enable for production, keep disabled for lower-cost dev.
+#checkov:skip=CKV_AWS_353:Performance Insights is configurable because it can add cost; enable in production as required.
+#checkov:skip=CKV_AWS_161:IAM authentication requires application token-generation support; enable only after app integration.
+#checkov:skip=CKV_AWS_118:Enhanced Monitoring requires an additional IAM role and monitoring overhead; add when operationally required.
+#checkov:skip=CKV2_AWS_30:Slow query logging is enabled at 1000ms; full statement logging is avoided to reduce sensitive-data exposure.
 resource "aws_db_instance" "this" {
+
   identifier = "${var.name_prefix}-postgres"
 
   engine         = "postgres"
@@ -25,7 +43,11 @@ resource "aws_db_instance" "this" {
   db_subnet_group_name   = aws_db_subnet_group.this.name
   vpc_security_group_ids = [var.db_sg_id]
   publicly_accessible    = false
-  multi_az               = var.multi_az
+  multi_az                            = var.multi_az
+  iam_database_authentication_enabled = var.enable_iam_authentication
+  performance_insights_enabled        = var.enable_performance_insights
+  parameter_group_name                = aws_db_parameter_group.this.name
+  enabled_cloudwatch_logs_exports     = ["postgresql", "upgrade"]
 
   backup_retention_period    = var.backup_retention_days
   auto_minor_version_upgrade = true

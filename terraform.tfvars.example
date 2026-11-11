@@ -28,8 +28,11 @@ db_backup_retention_period = 7
 
 # Optional ALB TLS. Certificate must be in aws_region and cover the ALB hostname/domain.
 alb_certificate_arn     = ""
-alb_deletion_protection = false
+alb_deletion_protection = true
 
 # Optional CloudFront + WAF + Route 53. Requires a public hosted zone.
 enable_cdn  = false
 domain_name = ""
+
+enable_performance_insights = false
+enable_db_iam_authentication = false

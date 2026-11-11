@@ -27,5 +27,5 @@ variable "certificate_arn" {
 variable "deletion_protection" {
   description = "Enable ALB deletion protection."
   type        = bool
-  default     = false
+  default     = true
 }

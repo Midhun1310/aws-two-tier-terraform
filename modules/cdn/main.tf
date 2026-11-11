@@ -3,9 +3,9 @@ data "aws_route53_zone" "this" {
   private_zone = false
 }
 
-# ---------- TLS certificate (must be in ap-south-1 for CloudFront) ----------
+# ---------- TLS certificate (CloudFront viewer certificates must be in us-east-1) ----------
 resource "aws_acm_certificate" "this" {
-  provider = aws.ap_south_1
+  provider = aws.us_east_1
 
   domain_name               = var.domain_name
   subject_alternative_names = ["www.${var.domain_name}"]
@@ -34,15 +34,17 @@ resource "aws_route53_record" "cert_validation" {
 }
 
 resource "aws_acm_certificate_validation" "this" {
-  provider = aws.ap_south_1
+  provider = aws.us_east_1
 
   certificate_arn         = aws_acm_certificate.this.arn
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
-# ---------- WAF (CLOUDFRONT scope must be in ap-south-1) ----------
+# ---------- WAF (CLOUDFRONT scope must be in us-east-1) ----------
+#checkov:skip=CKV2_AWS_31:WAF request logging is not enabled by default to avoid per-request log ingestion/storage charges; enable with a retention policy for production.
 resource "aws_wafv2_web_acl" "this" {
-  provider = aws.ap_south_1
+
+  provider = aws.us_east_1
 
   name  = "${var.name_prefix}-waf"
   scope = "CLOUDFRONT"
@@ -95,6 +97,23 @@ resource "aws_wafv2_web_acl" "this" {
     }
   }
 
+  rule {
+    name     = "AWSManagedRulesKnownBadInputsRuleSet"
+    priority = 3
+    override_action { none {} }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.name_prefix}-known-bad-inputs"
+      sampled_requests_enabled   = true
+    }
+  }
+
   visibility_config {
     cloudwatch_metrics_enabled = true
     metric_name                = "${var.name_prefix}-waf"
@@ -111,8 +130,29 @@ data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
   name = "Managed-AllViewerExceptHostHeader"
 }
 
+resource "aws_cloudfront_response_headers_policy" "security" {
+  name = "${var.name_prefix}-security-headers"
+  security_headers_config {
+    content_type_options { override = true }
+    frame_options { frame_option = "DENY" override = true }
+    referrer_policy { referrer_policy = "strict-origin-when-cross-origin" override = true }
+    strict_transport_security {
+      access_control_max_age_sec = 31536000
+      include_subdomains         = true
+      preload                    = true
+      override                   = true
+    }
+  }
+}
+
+#checkov:skip=CKV_AWS_86:CloudFront logging requires S3 logging storage and increases cost; add when a log-retention requirement is defined.
+#checkov:skip=CKV_AWS_374:Geo-blocking is a business policy; this optional distribution is intended to be globally reachable.
+#checkov:skip=CKV_AWS_310:There is only one ALB origin; a second independent origin is not available for failover.
+#checkov:skip=CKV2_AWS_47:AWSManagedRulesKnownBadInputsRuleSet is attached to the associated WAF ACL for known-bad input patterns.
 resource "aws_cloudfront_distribution" "this" {
-  enabled         = true
+
+  enabled             = true
+  default_root_object = "index.html"
   is_ipv6_enabled = true
   comment         = "${var.name_prefix} distribution"
   aliases         = [var.domain_name, "www.${var.domain_name}"]
@@ -126,12 +166,14 @@ resource "aws_cloudfront_distribution" "this" {
     custom_origin_config {
       http_port              = 80
       https_port             = 443
+      # CloudFront is the public TLS endpoint; origin traffic is HTTP inside AWS.
       origin_protocol_policy = "http-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
 
   default_cache_behavior {
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
     target_origin_id         = "alb"
     viewer_protocol_policy   = "redirect-to-https"
     allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]

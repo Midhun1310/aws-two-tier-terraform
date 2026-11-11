@@ -42,3 +42,9 @@ variable "single_nat_gateway" {
   description = "Use a single NAT gateway for all private subnets."
   type        = bool
 }
+
+variable "enable_flow_logs" {
+  description = "Enable VPC Flow Logs to CloudWatch."
+  type        = bool
+  default     = false
+}

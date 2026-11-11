@@ -1,10 +1,6 @@
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
-  azs         = slice(data.aws_availability_zones.available.names, 0, length(var.public_subnet_cidrs))
+  azs         = var.availability_zones
 
   common_tags = {
     Project     = var.project_name
@@ -22,6 +18,7 @@ module "vpc" {
   public_subnet_cidrs  = var.public_subnet_cidrs
   private_subnet_cidrs = var.private_subnet_cidrs
   single_nat_gateway   = var.single_nat_gateway
+  enable_flow_logs     = var.enable_vpc_flow_logs
 }
 
 module "security_groups" {
@@ -29,6 +26,7 @@ module "security_groups" {
 
   name_prefix     = local.name_prefix
   vpc_id          = module.vpc.vpc_id
+  vpc_cidr        = var.vpc_cidr
   cloudfront_only = var.enable_cdn
 }
 
@@ -44,7 +42,9 @@ module "rds" {
   allocated_storage     = var.db_allocated_storage
   engine_version        = var.db_engine_version
   multi_az              = var.db_multi_az
-  deletion_protection   = var.db_deletion_protection
+  deletion_protection   = var.db_deletion_protection || var.environment == "prod"
+  enable_performance_insights = var.enable_performance_insights
+  enable_iam_authentication   = var.enable_db_iam_authentication
   skip_final_snapshot   = var.db_skip_final_snapshot
   backup_retention_days = var.db_backup_retention_period
 }
@@ -57,7 +57,7 @@ module "alb" {
   public_subnet_ids   = module.vpc.public_subnet_ids
   alb_sg_id           = module.security_groups.alb_sg_id
   certificate_arn     = var.alb_certificate_arn
-  deletion_protection = var.alb_deletion_protection
+  deletion_protection = var.alb_deletion_protection || var.environment == "prod"
 }
 
 module "iam" {

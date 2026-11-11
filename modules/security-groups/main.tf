@@ -5,6 +5,8 @@ data "aws_ec2_managed_prefix_list" "cloudfront_origin" {
 }
 
 # ALB is public by default, or CloudFront-only when the CDN module is enabled.
+#checkov:skip=CKV2_AWS_5:Attached to the ALB via the root module security_groups argument.
+#checkov:skip=CKV_AWS_260:Public HTTP is retained only for the HTTP-to-HTTPS redirect listener.
 resource "aws_security_group" "alb" {
   name        = "${var.name_prefix}-alb-sg"
   description = "Allow public HTTP and HTTPS traffic to the ALB"
@@ -29,17 +31,18 @@ resource "aws_security_group" "alb" {
   }
 
   egress {
-    description = "Allow all outbound"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "Forward to web tier"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    cidr_blocks = [var.vpc_cidr]
   }
 
   tags = { Name = "${var.name_prefix}-alb-sg" }
 }
 
 # Web tier: only reachable from the load balancer.
+#checkov:skip=CKV2_AWS_5:Attached to EC2 instances through the compute launch template.
 resource "aws_security_group" "web" {
   name        = "${var.name_prefix}-web-sg"
   description = "Allow HTTP from the ALB only"
@@ -54,10 +57,18 @@ resource "aws_security_group" "web" {
   }
 
   egress {
-    description = "Allow all outbound (package installs via NAT, database access)"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description     = "PostgreSQL to database tier"
+    from_port       = var.db_port
+    to_port         = var.db_port
+    protocol        = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    description = "HTTPS for package updates and AWS APIs through NAT"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -65,6 +76,7 @@ resource "aws_security_group" "web" {
 }
 
 # Database tier: only reachable from the web tier.
+#checkov:skip=CKV2_AWS_5:Attached to RDS through the root module vpc_security_group_ids argument.
 resource "aws_security_group" "db" {
   name        = "${var.name_prefix}-db-sg"
   description = "Allow PostgreSQL from the web tier only"

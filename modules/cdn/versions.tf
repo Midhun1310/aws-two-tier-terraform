@@ -5,7 +5,7 @@ terraform {
     aws = {
       source                = "hashicorp/aws"
       version               = "~> 5.0"
-      configuration_aliases = [aws.ap_south_1]
+      configuration_aliases = [aws.us_east_1]
     }
   }
 }
