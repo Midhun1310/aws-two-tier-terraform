@@ -52,12 +52,12 @@ module "rds" {
 module "alb" {
   source = "./modules/alb"
 
-  name_prefix           = local.name_prefix
-  vpc_id                = module.vpc.vpc_id
-  public_subnet_ids     = module.vpc.public_subnet_ids
-  alb_sg_id             = module.security_groups.alb_sg_id
-  certificate_arn       = var.alb_certificate_arn
-  deletion_protection   = var.alb_deletion_protection
+  name_prefix         = local.name_prefix
+  vpc_id              = module.vpc.vpc_id
+  public_subnet_ids   = module.vpc.public_subnet_ids
+  alb_sg_id           = module.security_groups.alb_sg_id
+  certificate_arn     = var.alb_certificate_arn
+  deletion_protection = var.alb_deletion_protection
 }
 
 module "iam" {
@@ -86,7 +86,7 @@ module "cdn" {
   count  = var.enable_cdn ? 1 : 0
 
   providers = {
-    aws           = aws
+    aws            = aws
     aws.ap_south_1 = aws.ap_south_1
   }
 

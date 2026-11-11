@@ -15,8 +15,8 @@ resource "aws_launch_template" "web" {
 
   vpc_security_group_ids = [var.web_sg_id]
   user_data              = filebase64("${path.module}/user-data.sh")
-  ebs_optimized           = true
-  update_default_version  = true
+  ebs_optimized          = true
+  update_default_version = true
 
   iam_instance_profile {
     name = var.instance_profile_name
@@ -24,8 +24,8 @@ resource "aws_launch_template" "web" {
 
   # Require IMDSv2.
   metadata_options {
-    http_endpoint = "enabled"
-    http_tokens   = "required"
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
     http_put_response_hop_limit = 1
   }
 
@@ -33,9 +33,9 @@ resource "aws_launch_template" "web" {
     device_name = "/dev/sda1"
 
     ebs {
-      volume_size = 8
-      volume_type = "gp3"
-      encrypted   = true
+      volume_size           = 8
+      volume_type           = "gp3"
+      encrypted             = true
       delete_on_termination = true
     }
   }
