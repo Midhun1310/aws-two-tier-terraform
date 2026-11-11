@@ -14,6 +14,13 @@ resource "aws_db_parameter_group" "this" {
     value        = "1000"
     apply_method = "pending-reboot"
   }
+
+  # Require encrypted client connections to PostgreSQL.
+  parameter {
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot"
+  }
   lifecycle { create_before_destroy = true }
 }
 
@@ -40,9 +47,9 @@ resource "aws_db_instance" "this" {
   # so no credentials appear in code, variables or committed files.
   manage_master_user_password = true
 
-  db_subnet_group_name   = aws_db_subnet_group.this.name
-  vpc_security_group_ids = [var.db_sg_id]
-  publicly_accessible    = false
+  db_subnet_group_name                = aws_db_subnet_group.this.name
+  vpc_security_group_ids              = [var.db_sg_id]
+  publicly_accessible                 = false
   multi_az                            = var.multi_az
   iam_database_authentication_enabled = var.enable_iam_authentication
   performance_insights_enabled        = var.enable_performance_insights

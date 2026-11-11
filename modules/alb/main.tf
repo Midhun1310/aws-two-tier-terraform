@@ -17,6 +17,11 @@ resource "aws_lb" "this" {
   tags = { Name = "${var.name_prefix}-alb" }
 }
 
+#checkov:skip=CKV2_AWS_62:ALB access logs are delivered as objects; no event-driven processing is required.
+#checkov:skip=CKV_AWS_21:Access logs are retained for 90 days; object versioning would retain duplicate log versions unnecessarily.
+#checkov:skip=CKV_AWS_18:This is the destination bucket for ALB access logs; enabling server access logging requires a separate destination bucket and creates additional cost.
+#checkov:skip=CKV_AWS_144:Cross-region replication is not required for this development-oriented access-log bucket. Enable separately if a disaster-recovery requirement is established.
+#checkov:skip=CKV_AWS_145:ALB access log delivery supports SSE-S3 encryption; AES256 is configured below.
 resource "aws_s3_bucket" "alb_logs" {
   bucket_prefix = "${replace(var.name_prefix, "_", "-")}-alb-logs-"
   force_destroy = false
@@ -35,7 +40,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
   rule {
     id     = "expire-alb-access-logs-after-90-days"
     status = "Enabled"
+    filter {}
     expiration { days = 90 }
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 }
 

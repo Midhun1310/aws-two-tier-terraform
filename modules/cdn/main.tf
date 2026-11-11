@@ -3,7 +3,7 @@ data "aws_route53_zone" "this" {
   private_zone = false
 }
 
-# ---------- TLS certificate (CloudFront viewer certificates must be in us-east-1) ----------
+# ---------- TLS certificate (must be in ap-south-1 for CloudFront) ----------
 resource "aws_acm_certificate" "this" {
   provider = aws.us_east_1
 
@@ -41,9 +41,7 @@ resource "aws_acm_certificate_validation" "this" {
 }
 
 # ---------- WAF (CLOUDFRONT scope must be in us-east-1) ----------
-#checkov:skip=CKV2_AWS_31:WAF request logging is not enabled by default to avoid per-request log ingestion/storage charges; enable with a retention policy for production.
 resource "aws_wafv2_web_acl" "this" {
-
   provider = aws.us_east_1
 
   name  = "${var.name_prefix}-waf"
@@ -100,7 +98,9 @@ resource "aws_wafv2_web_acl" "this" {
   rule {
     name     = "AWSManagedRulesKnownBadInputsRuleSet"
     priority = 3
-    override_action { none {} }
+    override_action {
+      none {}
+    }
     statement {
       managed_rule_group_statement {
         name        = "AWSManagedRulesKnownBadInputsRuleSet"
@@ -121,6 +121,20 @@ resource "aws_wafv2_web_acl" "this" {
   }
 }
 
+
+# WAF logs are written to CloudWatch Logs in us-east-1 (CloudFront scope).
+resource "aws_cloudwatch_log_group" "waf" {
+  provider          = aws.us_east_1
+  name              = "aws-waf-logs-${var.name_prefix}"
+  retention_in_days = 30
+}
+
+resource "aws_wafv2_web_acl_logging_configuration" "this" {
+  provider                = aws.us_east_1
+  resource_arn            = aws_wafv2_web_acl.this.arn
+  log_destination_configs = [aws_cloudwatch_log_group.waf.arn]
+}
+
 # ---------- CloudFront ----------
 data "aws_cloudfront_cache_policy" "caching_disabled" {
   name = "Managed-CachingDisabled"
@@ -134,8 +148,14 @@ resource "aws_cloudfront_response_headers_policy" "security" {
   name = "${var.name_prefix}-security-headers"
   security_headers_config {
     content_type_options { override = true }
-    frame_options { frame_option = "DENY" override = true }
-    referrer_policy { referrer_policy = "strict-origin-when-cross-origin" override = true }
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+    referrer_policy {
+      referrer_policy = "strict-origin-when-cross-origin"
+      override        = true
+    }
     strict_transport_security {
       access_control_max_age_sec = 31536000
       include_subdomains         = true
@@ -148,24 +168,24 @@ resource "aws_cloudfront_response_headers_policy" "security" {
 #checkov:skip=CKV_AWS_86:CloudFront logging requires S3 logging storage and increases cost; add when a log-retention requirement is defined.
 #checkov:skip=CKV_AWS_374:Geo-blocking is a business policy; this optional distribution is intended to be globally reachable.
 #checkov:skip=CKV_AWS_310:There is only one ALB origin; a second independent origin is not available for failover.
-#checkov:skip=CKV2_AWS_47:AWSManagedRulesKnownBadInputsRuleSet is attached to the associated WAF ACL for known-bad input patterns.
+#checkov:skip=CKV2_AWS_47:Checkov does not recognize the configured AWS managed known-bad-inputs rule group as its expected Log4j control; the managed rule group remains enabled. Validate this exception against the Checkov version in CI.
 resource "aws_cloudfront_distribution" "this" {
 
   enabled             = true
   default_root_object = "index.html"
-  is_ipv6_enabled = true
-  comment         = "${var.name_prefix} distribution"
-  aliases         = [var.domain_name, "www.${var.domain_name}"]
-  price_class     = "PriceClass_100"
-  web_acl_id      = aws_wafv2_web_acl.this.arn
+  is_ipv6_enabled     = true
+  comment             = "${var.name_prefix} distribution"
+  aliases             = [var.domain_name, "www.${var.domain_name}"]
+  price_class         = "PriceClass_100"
+  web_acl_id          = aws_wafv2_web_acl.this.arn
 
   origin {
     domain_name = var.alb_dns_name
     origin_id   = "alb"
 
     custom_origin_config {
-      http_port              = 80
-      https_port             = 443
+      http_port  = 80
+      https_port = 443
       # CloudFront is the public TLS endpoint; origin traffic is HTTP inside AWS.
       origin_protocol_policy = "http-only"
       origin_ssl_protocols   = ["TLSv1.2"]
@@ -174,13 +194,13 @@ resource "aws_cloudfront_distribution" "this" {
 
   default_cache_behavior {
     response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
-    target_origin_id         = "alb"
-    viewer_protocol_policy   = "redirect-to-https"
-    allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods           = ["GET", "HEAD"]
-    compress                 = true
-    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
-    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    target_origin_id           = "alb"
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods             = ["GET", "HEAD"]
+    compress                   = true
+    cache_policy_id            = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
   }
 
   restrictions {

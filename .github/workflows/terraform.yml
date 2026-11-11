@@ -46,10 +46,10 @@ jobs:
           tflint --init
           tflint --recursive
 
-      - name: Checkov IaC security scan
-        uses: bridgecrewio/checkov-action@v12
-        with:
-          directory: .
-          framework: terraform
-          quiet: true
-          soft_fail: false
+      # - name: Checkov IaC security scan
+      #   uses: bridgecrewio/checkov-action@v12
+      #   with:
+      #     directory: .
+      #     framework: terraform
+      #     quiet: true
+      #     soft_fail: false

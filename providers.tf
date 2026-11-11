@@ -6,10 +6,10 @@ provider "aws" {
   }
 }
 
-# CloudFront certificates and WAF web ACLs must live in ap-south-1.
+# CloudFront certificates and WAF web ACLs must live in us-east-1.
 provider "aws" {
-  alias  = "ap_south_1"
-  region = "ap-south-1"
+  alias  = "us_east_1"
+  region = "us-east-1"
 
   default_tags {
     tags = local.common_tags

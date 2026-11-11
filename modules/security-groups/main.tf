@@ -31,10 +31,10 @@ resource "aws_security_group" "alb" {
   }
 
   egress {
-    description     = "Forward to web tier"
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
+    description = "Forward to web tier"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
     cidr_blocks = [var.vpc_cidr]
   }
 
@@ -57,10 +57,10 @@ resource "aws_security_group" "web" {
   }
 
   egress {
-    description     = "PostgreSQL to database tier"
-    from_port       = var.db_port
-    to_port         = var.db_port
-    protocol        = "tcp"
+    description = "PostgreSQL to database tier"
+    from_port   = var.db_port
+    to_port     = var.db_port
+    protocol    = "tcp"
     cidr_blocks = [var.vpc_cidr]
   }
 

@@ -33,20 +33,20 @@ module "security_groups" {
 module "rds" {
   source = "./modules/rds"
 
-  name_prefix           = local.name_prefix
-  private_subnet_ids    = module.vpc.private_subnet_ids
-  db_sg_id              = module.security_groups.db_sg_id
-  db_name               = var.db_name
-  db_username           = var.db_username
-  instance_class        = var.db_instance_class
-  allocated_storage     = var.db_allocated_storage
-  engine_version        = var.db_engine_version
-  multi_az              = var.db_multi_az
-  deletion_protection   = var.db_deletion_protection || var.environment == "prod"
+  name_prefix                 = local.name_prefix
+  private_subnet_ids          = module.vpc.private_subnet_ids
+  db_sg_id                    = module.security_groups.db_sg_id
+  db_name                     = var.db_name
+  db_username                 = var.db_username
+  instance_class              = var.db_instance_class
+  allocated_storage           = var.db_allocated_storage
+  engine_version              = var.db_engine_version
+  multi_az                    = var.db_multi_az
+  deletion_protection         = var.db_deletion_protection || var.environment == "prod"
   enable_performance_insights = var.enable_performance_insights
   enable_iam_authentication   = var.enable_db_iam_authentication
-  skip_final_snapshot   = var.db_skip_final_snapshot
-  backup_retention_days = var.db_backup_retention_period
+  skip_final_snapshot         = var.db_skip_final_snapshot
+  backup_retention_days       = var.db_backup_retention_period
 }
 
 module "alb" {
@@ -86,8 +86,8 @@ module "cdn" {
   count  = var.enable_cdn ? 1 : 0
 
   providers = {
-    aws            = aws
-    aws.ap_south_1 = aws.ap_south_1
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
   }
 
   name_prefix  = local.name_prefix
